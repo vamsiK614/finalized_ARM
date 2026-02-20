@@ -23,6 +23,8 @@ def main():
     runtime_cfg = config["runtime"]
 
     allowed_classes = set(model_cfg["allowed_classes"])
+    class_thresholds = model_cfg.get("class_confidence_thresholds", {})
+
     show_fps = runtime_cfg["show_fps"]
     save_images = runtime_cfg["save_detection_images"]
 
@@ -52,7 +54,7 @@ def main():
     detector = OpenCVDNNDetector(
         model_path=model_cfg["path"],
         input_size=model_cfg["input_size"],
-        conf_threshold=model_cfg["confidence_threshold"],
+        conf_threshold=model_cfg["confidence_threshold"],  # base threshold (low)
         nms_threshold=model_cfg["nms_threshold"],
     )
 
@@ -98,7 +100,19 @@ def main():
             filtered_ids = []
 
             for box, conf, cls_id in zip(boxes, confs, ids):
-                if cls_id in allowed_ids:
+
+                if cls_id not in allowed_ids:
+                    continue
+
+                class_name = class_names[cls_id]
+
+                # Get class-specific threshold
+                threshold = class_thresholds.get(
+                    class_name,
+                    model_cfg["confidence_threshold"]  # fallback
+                )
+
+                if conf >= threshold:
                     filtered_boxes.append(box)
                     filtered_confs.append(conf)
                     filtered_ids.append(cls_id)
@@ -117,7 +131,7 @@ def main():
 
                 timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
                 log_file.write(f"{timestamp}, {combined_entry}, frame={frame_number}\n")
-                log_file.flush()  # Immediate disk write for safety
+                log_file.flush()
 
                 if save_images:
                     annotated = draw_detections(
@@ -132,7 +146,7 @@ def main():
                     cv2.imwrite(os.path.join(image_dir, filename), annotated)
 
             # -----------------------------
-            # Optional FPS
+            # Optional FPS display
             # -----------------------------
             if show_fps:
                 fps_counter += 1

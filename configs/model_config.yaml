@@ -4,8 +4,21 @@ model:
   input_size: 256
   confidence_threshold: 0.6
   nms_threshold: 0.45
+
+  # Classes we care about
   allowed_classes:
-    - person
+    - longitudinal crack
+    - transverse crack
+    - aligator crack
+    - pothole
+
+  # Class-specific confidence thresholds
+  # These control final detection strictness
+  class_confidence_thresholds:
+    longitudinal crack: 0.6
+    transverse crack: 0.6
+    aligator crack: 0.65
+    pothole: 0.8
 
 # Camera settings
 camera:
